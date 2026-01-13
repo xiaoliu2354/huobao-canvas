@@ -77,7 +77,7 @@
             <button 
               v-for="tag in suggestions" 
               :key="tag"
-              @click="inputText = tag.slice(1)"
+              @click="inputText = tag"
               class="px-3 py-1.5 text-sm rounded-full bg-[var(--bg-secondary)] border border-[var(--border-color)] hover:border-[var(--accent-color)] transition-colors"
             >
               {{ tag }}
@@ -199,7 +199,7 @@
     </aside>
 
     <!-- API Settings Modal | API 设置弹窗 -->
-    <ApiSettings v-model:show="showApiSettings" />
+    <ApiSettings v-model:show="showApiSettings" @saved="refreshApiConfig" />
 
     <!-- Rename modal | 重命名弹窗 -->
     <n-modal v-model:show="showRenameModal" preset="dialog" title="重命名项目">
@@ -253,7 +253,13 @@ const apiConfig = useApiConfig()
 
 // API Settings state | API 设置状态
 const showApiSettings = ref(false)
-const isApiConfigured = apiConfig.isConfigured
+const isApiConfigured = ref(apiConfig.isConfigured.value)
+
+// Refresh API config state | 刷新 API 配置状态
+const refreshApiConfig = () => {
+  debugger
+  isApiConfigured.value = !!localStorage.getItem('apiKey')
+}
 
 // Video refs for hover play | 视频引用用于悬停播放
 const videoRefs = new Map()
@@ -369,7 +375,8 @@ const confirmRename = () => {
 
 // Check API key before navigation | 跳转前检查 API Key
 const checkApiKeyAndNavigate = (callback) => {
-  if (!apiConfig.isConfigured.value) {
+  debugger
+  if (!isApiConfigured.value) {
     dialog.warning({
       title: '未配置 API Key',
       content: '请先在设置中配置 API Key 才能使用画布功能。',

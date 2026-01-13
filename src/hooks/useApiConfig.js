@@ -53,10 +53,12 @@ export const useApiConfig = () => {
 
   const setApiKey = (key) => {
     apiKey.value = key
+    setStored(STORAGE_KEYS.API_KEY, key)
   }
 
   const setBaseUrl = (url) => {
     baseUrl.value = url
+    setStored(STORAGE_KEYS.BASE_URL, url)
   }
 
   const configure = (config) => {
