@@ -2,7 +2,7 @@
  * Workflow Templates Configuration | 工作流模板配置
  * 预设工作流模板，支持一键添加到画布
  */
-
+import workflowCover from '@/assets/workflow01.jpeg'
 // Multi-angle prompts | 多角度提示词模板
 export const MULTI_ANGLE_PROMPTS = {
   front: {
@@ -45,7 +45,7 @@ export const WORKFLOW_TEMPLATES = [
     description: '生成角色的正视、侧视、后视、俯视四宫格分镜图',
     icon: 'GridOutline',
     category: 'storyboard',
-    thumbnail: '/workflows/multi-angle.png',
+    cover: workflowCover,
     // 节点配置
     createNodes: (startPosition) => {
       const nodeSpacing = 400
