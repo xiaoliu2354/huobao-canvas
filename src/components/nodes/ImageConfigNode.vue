@@ -73,8 +73,8 @@
         <div
           class="flex items-center gap-2 text-xs text-[var(--text-secondary)] py-1 border-t border-[var(--border-color)]">
           <span class="px-2 py-0.5 rounded-full"
-            :class="connectedPrompt ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800'">
-            提示词 {{ connectedPrompt ? '✓' : '○' }}
+            :class="connectedPrompts.length > 0 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800'">
+            提示词 {{ connectedPrompts.length > 0 ? `${connectedPrompts.length}个` : '○' }}
           </span>
           <span class="px-2 py-0.5 rounded-full"
             :class="connectedRefImages.length > 0 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800'">
@@ -165,7 +165,7 @@ const showActions = ref(false)
 
 // Local state | 本地状态
 const localModel = ref(props.data?.model || DEFAULT_IMAGE_MODEL)
-const localSize = ref(props.data?.size || '1024x1024')
+const localSize = ref(props.data?.size || '2048x2048')
 const localQuality = ref(props.data?.quality || 'standard')
 
 // Get current model config | 获取当前模型配置
@@ -225,7 +225,7 @@ onMounted(() => {
 // Get connected nodes | 获取连接的节点
 const getConnectedInputs = () => {
   const connectedEdges = edges.value.filter(e => e.target === props.id)
-  let prompt = ''
+  const prompts = [] // Array of { order, content } | 提示词数组
   const refImages = []
 
   for (const edge of connectedEdges) {
@@ -233,7 +233,12 @@ const getConnectedInputs = () => {
     if (!sourceNode) continue
 
     if (sourceNode.type === 'text') {
-      prompt = sourceNode.data?.content || ''
+      const content = sourceNode.data?.content || ''
+      if (content) {
+        // Get order from edge data, default to 1 | 从边数据获取顺序，默认为1
+        const order = edge.data?.promptOrder || 1
+        prompts.push({ order, content, nodeId: sourceNode.id })
+      }
     } else if (sourceNode.type === 'image') {
       // Prefer base64, fallback to url | 优先使用 base64，回退到 url
       const imageData = sourceNode.data?.base64 || sourceNode.data?.url
@@ -243,12 +248,16 @@ const getConnectedInputs = () => {
     }
   }
 
-  return { prompt, refImages }
+  // Sort prompts by order and concatenate | 按顺序排序并拼接
+  prompts.sort((a, b) => a.order - b.order)
+  const combinedPrompt = prompts.map(p => p.content).join('\n\n')
+
+  return { prompt: combinedPrompt, prompts, refImages }
 }
 
-// Computed connected prompt | 计算连接的提示词
-const connectedPrompt = computed(() => {
-  return getConnectedInputs().prompt
+// Computed connected prompts (sorted by order) | 计算连接的提示词（按顺序排列）
+const connectedPrompts = computed(() => {
+  return getConnectedInputs().prompts
 })
 
 // Computed connected reference images | 计算连接的参考图
@@ -318,11 +327,16 @@ const findConnectedOutputImageNode = () => {
 
 // Handle generate action | 处理生成操作
 const handleGenerate = async () => {
-  const { prompt, refImages } = getConnectedInputs()
+  const { prompt, prompts, refImages } = getConnectedInputs()
 
   if (!prompt && refImages.length === 0) {
     window.$message?.warning('请连接文本节点（提示词）或图片节点（参考图）')
     return
+  }
+  
+  // Log prompt order for debugging | 记录提示词顺序用于调试
+  if (prompts.length > 1) {
+    console.log('[ImageConfigNode] 拼接提示词顺序:', prompts.map(p => `${p.order}: ${p.content.substring(0, 20)}...`))
   }
 
   if (!isConfigured.value) {

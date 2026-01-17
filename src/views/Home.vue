@@ -1,6 +1,6 @@
 <template>
   <!-- Home page | 首页 -->
-  <div class="min-h-screen bg-[var(--bg-primary)]">
+  <div class="min-h-screen h-screen overflow-y-auto bg-[var(--bg-primary)]">
     <!-- Header | 顶部导航 -->
     <header class="flex items-center justify-between px-4 md:px-8 py-4 border-b border-[var(--border-color)]">
       <div class="flex items-center gap-2">
