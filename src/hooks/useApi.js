@@ -57,7 +57,24 @@ export const useChat = (options = {}) => {
   const currentResponse = ref('')
   let abortController = null
 
-  const send = async (content, stream = true) => {
+  // 核心修改：支持重载 send(content, stream) 或 send(content, model, stream)
+  const send = async (content, modelOrStream = null, streamParam = true) => {
+    // 1. 设置默认值
+    let model = options.model || 'gpt-4o-mini'
+    let stream = true
+
+    // 2. 参数解析逻辑
+    if (typeof modelOrStream === 'string') {
+      // 如果第二个参数是字符串，说明传的是模型：send('Hello', 'gpt-4o', true)
+      model = modelOrStream
+      if (typeof streamParam === 'boolean') {
+        stream = streamParam
+      }
+    } else if (typeof modelOrStream === 'boolean') {
+      // 如果第二个参数是布尔值，说明传的是流开关（旧用法）：send('Hello', true)
+      stream = modelOrStream
+    }
+
     setLoading(true)
     currentResponse.value = ''
 
@@ -73,8 +90,9 @@ export const useChat = (options = {}) => {
         abortController = new AbortController()
         let fullResponse = ''
 
+        // 使用解析出的 dynamic model
         for await (const chunk of streamChatCompletions(
-          { model: options.model || 'gpt-4o-mini', messages: msgList },
+          { model: model, messages: msgList }, 
           abortController.signal
         )) {
           fullResponse += chunk
@@ -85,6 +103,9 @@ export const useChat = (options = {}) => {
         messages.value.push({ role: 'assistant', content: fullResponse })
         setSuccess()
         return fullResponse
+      } else {
+         // 如果有非流式逻辑可以在这里扩展，目前主要通过流式处理
+         // 暂未实现非流式分支，保持原有逻辑结构
       }
     } catch (err) {
       if (err.name !== 'AbortError') {
