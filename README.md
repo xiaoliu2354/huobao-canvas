@@ -49,7 +49,7 @@
 
 ```bash
 # 克隆项目
-git clone https://github.com/chatfire-AI/huobao-canvas.git
+git clone https://github.com/xiaoliu2354/huobao-canvas.git
 cd huobao-canvas
 
 # 安装依赖
