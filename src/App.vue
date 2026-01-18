@@ -3,9 +3,10 @@
  * Root App component | 根组件
  * Provides naive-ui config and router view
  */
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { NConfigProvider, NMessageProvider, NDialogProvider, darkTheme } from 'naive-ui'
 import { isDark } from './stores/theme'
+import { loadAllModels } from '@/stores/models'
 
 // Naive UI theme based on dark mode | 基于深色模式的 Naive UI 主题
 const theme = computed(() => isDark.value ? darkTheme : null)
@@ -40,12 +41,8 @@ const themeOverrides = {
     heightMedium: '36px'
   }
 }
-</script>
 
-<script setup>
-import { onMounted } from 'vue'
-import { loadAllModels } from '@/stores/models'
-
+// Mount logic | 挂载逻辑
 onMounted(() => {
   // 启动时静默加载模型列表
   loadAllModels()
