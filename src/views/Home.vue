@@ -416,7 +416,7 @@ const openProject = (project) => {
 
 // Check if URL is a video | 检查 URL 是否为视频
 const isVideoUrl = (url) => {
-  if (!url) return false
+  if (!url || typeof url !== 'string') return false
   const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.mkv']
   return videoExtensions.some(ext => url.toLowerCase().includes(ext))
 }
