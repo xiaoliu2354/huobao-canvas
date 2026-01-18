@@ -42,6 +42,16 @@ const themeOverrides = {
 }
 </script>
 
+<script setup>
+import { onMounted } from 'vue'
+import { loadAllModels } from '@/stores/models'
+
+onMounted(() => {
+  // 启动时静默加载模型列表
+  loadAllModels()
+})
+</script>
+
 <template>
   <n-config-provider :theme="theme" :theme-overrides="themeOverrides">
     <n-message-provider>
