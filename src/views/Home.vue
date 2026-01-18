@@ -8,6 +8,15 @@
         <!-- <span class="text-lg font-bold text-[var(--text-primary)]">火宝无限画布</span> -->
       </div>
       <div class="flex items-center gap-4">
+        <a 
+          href="https://github.com/chatfire-AI/huobao-canvas"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="p-2 rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors text-[var(--text-primary)] hover:text-[var(--accent-color)]"
+          title="GitHub"
+        >
+          <n-icon :size="20"><LogoGithub /></n-icon>
+        </a>
         <button 
           @click="toggleTheme"
           class="p-2 rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors"
@@ -233,7 +242,8 @@ import {
   CreateOutline,
   CopyOutline,
   SettingsOutline,
-  TrashOutline
+  TrashOutline,
+  LogoGithub
 } from '@vicons/ionicons5'
 import { isDark, toggleTheme } from '../stores/theme'
 import { 
