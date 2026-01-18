@@ -1,33 +1,33 @@
 <template>
-  <!-- Text node wrapper for hover area | 文本节点包裹层，扩展悬浮区域 -->
   <div class="text-node-wrapper" @mouseenter="showActions = true" @mouseleave="showActions = false">
-    <!-- Text node | 文本节点 -->
     <div
       class="text-node bg-[var(--bg-secondary)] rounded-xl border min-w-[280px] max-w-[350px] relative transition-all duration-200"
       :class="data.selected ? 'border-1 border-blue-500 shadow-lg shadow-blue-500/20' : 'border border-[var(--border-color)]'">
-      <!-- Header | 头部 -->
       <div class="flex items-center justify-between px-3 py-2 border-b border-[var(--border-color)]">
-        <span class="text-sm font-medium text-[var(--text-secondary)]">{{ data.label }}</span>
+        <div class="flex items-center gap-2">
+            <span class="text-sm font-medium text-[var(--text-secondary)]">{{ data.label }}</span>
+        </div>
+        
         <div class="flex items-center gap-1">
+          <n-dropdown :options="chatModelOptions" @select="handleChatModelSelect" trigger="click">
+            <button class="p-1 hover:bg-[var(--bg-tertiary)] rounded text-[var(--text-secondary)] text-xs flex items-center gap-1" title="选择润色模型">
+                <span class="max-w-[80px] truncate">{{ displayChatModel }}</span>
+                <n-icon size="10"><ChevronDownOutline /></n-icon>
+            </button>
+          </n-dropdown>
+
           <button @click="handleDelete" class="p-1 hover:bg-[var(--bg-tertiary)] rounded transition-colors">
             <n-icon :size="14">
               <TrashOutline />
             </n-icon>
           </button>
-          <button class="p-1 hover:bg-[var(--bg-tertiary)] rounded transition-colors">
-            <n-icon :size="14">
-              <ExpandOutline />
-            </n-icon>
-          </button>
         </div>
       </div>
 
-      <!-- Content | 内容 -->
       <div class="p-3">
         <textarea v-model="content" @blur="updateContent" @wheel.stop @mousedown.stop
           class="w-full bg-transparent resize-none outline-none text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] min-h-[80px]"
           placeholder="请输入文本内容..." />
-        <!-- Polish button | 润色按钮 -->
         <button 
           @click="handlePolish"
           :disabled="isPolishing || !content.trim()"
@@ -35,18 +35,15 @@
         >
           <n-spin v-if="isPolishing" :size="12" />
           <span v-else>✨</span>
-          AI 润色
+          AI 润色 ({{ displayChatModel }})
         </button>
       </div>
 
-      <!-- Handles | 连接点 -->
       <Handle type="source" :position="Position.Right" id="right" class="!bg-[var(--accent-color)]" />
       <Handle type="target" :position="Position.Left" id="left" class="!bg-[var(--accent-color)]" />
 
     </div>
 
-    <!-- Hover action buttons | 悬浮操作按钮 -->
-    <!-- Top right - Copy button | 右上角 - 复制按钮 -->
     <div v-show="showActions" class="absolute -top-5 right-12 z-[1000]">
       <button @click="handleDuplicate"
         class="action-btn group p-2 bg-white rounded-lg transition-all border border-gray-200 flex items-center gap-0 hover:gap-1.5 w-max">
@@ -58,10 +55,8 @@
       </button>
     </div>
 
-    <!-- Right side - Action buttons | 右侧 - 操作按钮 -->
     <div v-show="showActions"
       class="absolute right-10 top-1/2 -translate-y-1/2 translate-x-full flex flex-col gap-2 z-[1000]">
-      <!-- Image generation button | 图片生成按钮 -->
       <button @click="handleImageGen"
         class="action-btn group p-2 bg-white rounded-lg transition-all border border-gray-200 flex items-center gap-0 hover:gap-1.5 w-max">
         <n-icon :size="16" class="text-gray-600">
@@ -70,7 +65,6 @@
         <span
           class="text-xs text-gray-600 max-w-0 overflow-hidden group-hover:max-w-[80px] transition-all duration-200 whitespace-nowrap">图片生成</span>
       </button>
-      <!-- Video generation button | 视频生成按钮 -->
       <button @click="handleVideoGen"
         class="action-btn group p-2 bg-white rounded-lg transition-all border border-gray-200 flex items-center gap-0 hover:gap-1.5 w-max">
         <n-icon :size="16" class="text-gray-600">
@@ -88,12 +82,13 @@
  * Text node component | 文本节点组件
  * Allows user to input and edit text content
  */
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, computed, nextTick } from 'vue'
 import { Handle, Position, useVueFlow } from '@vue-flow/core'
-import { NIcon, NSpin } from 'naive-ui'
-import { TrashOutline, ExpandOutline, CopyOutline, ImageOutline, VideocamOutline } from '@vicons/ionicons5'
+import { NIcon, NSpin, NDropdown } from 'naive-ui'
+import { TrashOutline, ExpandOutline, CopyOutline, ImageOutline, VideocamOutline, ChevronDownOutline } from '@vicons/ionicons5'
 import { updateNode, removeNode, duplicateNode, addNode, addEdge, nodes } from '../../stores/canvas'
 import { useChat, useApiConfig } from '../../hooks'
+import { chatModelOptions, DEFAULT_CHAT_MODEL } from '../../stores/models'
 
 const props = defineProps({
   id: String,
@@ -107,13 +102,15 @@ const { updateNodeInternals } = useVueFlow()
 const { isConfigured: isApiConfigured } = useApiConfig()
 
 // Chat hook for polish | 润色用的 Chat hook
+// 注意：移除了 model 选项，因为我们将在 send 时动态传入
 const { send: sendChat } = useChat({
-  systemPrompt: '你是一个专业的AI绘画提示词专家。将用户输入的内容美化成高质量的生图提示词，包含风格、光线、構图、细节等要素。直接返回提示词，不要其他解释。',
-  model: 'gpt-4o-mini'
+  systemPrompt: '你是一个专业的AI绘画提示词专家。将用户输入的内容美化成高质量的生图提示词，包含风格、光线、構图、细节等要素。直接返回提示词，不要其他解释。'
 })
 
 // Local content state | 本地内容状态
 const content = ref(props.data?.content || '')
+// Local model state | 本地模型状态
+const localModel = ref(props.data?.chatModel || DEFAULT_CHAT_MODEL)
 
 // Hover state | 悬浮状态
 const showActions = ref(false)
@@ -128,9 +125,23 @@ watch(() => props.data?.content, (newVal) => {
   }
 })
 
+// Display model name (shortened) | 显示简短模型名
+const displayChatModel = computed(() => {
+  const model = chatModelOptions.value.find(m => m.key === localModel.value)
+  if (!model) return 'AI'
+  // 移除 'GPT-' 前缀以节省空间，或者只取前几个字符
+  return model.label.replace('GPT-', '').replace('Claude-', '').substring(0, 8)
+})
+
 // Update content in store | 更新存储中的内容
 const updateContent = () => {
   updateNode(props.id, { content: content.value })
+}
+
+// Handle chat model selection | 处理模型选择
+const handleChatModelSelect = (key) => {
+    localModel.value = key
+    updateNode(props.id, { chatModel: key })
 }
 
 // Handle AI polish | 处理 AI 润色
@@ -149,7 +160,8 @@ const handlePolish = async () => {
 
   try {
     // Call chat API to polish the prompt | 调用 AI 润色提示词
-    const result = await sendChat(input, true)
+    // 关键修改：传入 localModel.value
+    const result = await sendChat(input, localModel.value, true)
     
     if (result) {
       content.value = result
